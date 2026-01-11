@@ -1,0 +1,47 @@
+[0.03s - 8.52s] SPEAKER_04:  Hello and welcome to The English We Speak, where we explain phrases used by fluent English speakers so that you can use them too.
+[8.58s - 10.97s] SPEAKER_04: I'm Feifei and I'm here with Beth.
+[11.21s - 11.91s] SPEAKER_03: Hi, Beth.
+[12.03s - 12.81s] SPEAKER_03: Hi, Feifei.
+[13.65s - 15.13s] SPEAKER_03: I am exhausted.
+[15.17s - 18.82s] SPEAKER_03: I've been studying for hours before my Spanish exam.
+[19.30s - 21.48s] SPEAKER_03: I really had to lock in last night.
+[21.46s - 22.36s] SPEAKER_03:  Lock in?
+[22.42s - 24.50s] SPEAKER_03: You weren't locked in a room, were you?
+[24.52s - 25.21s] SPEAKER_03: No.
+[25.89s - 28.93s] SPEAKER_03: Lock in means focus really hard on something.
+[29.25s - 31.99s] SPEAKER_03: Commit to the tasks and avoid distractions.
+[32.55s - 35.64s] SPEAKER_03: I turned off my phone and studied as much as I could.
+[35.66s - 36.54s] SPEAKER_03: I see.
+[36.66s - 40.12s] SPEAKER_04: So you worked seriously and with concentration.
+[40.84s - 46.01s] SPEAKER_04: Lock in is all about intense focus, determination and boosting productivity.
+[46.37s - 46.83s] SPEAKER_03: Exactly.
+[47.31s - 49.13s] SPEAKER_03: All my focus was on my revision.
+[49.17s - 51.12s] SPEAKER_03: No distractions.
+[51.09s - 53.76s] SPEAKER_03:  You might also hear lock-in about sports.
+[54.38s - 57.43s] SPEAKER_03: Players might lock-in before they play a big match.
+[57.79s - 58.05s] SPEAKER_04: Yes.
+[58.31s - 60.81s] SPEAKER_04: Also, we can lock-in on our goals.
+[61.17s - 67.85s] SPEAKER_04: For example, I'm preparing to run a half marathon in three months, so I need to lock-in on my fitness goals.
+[68.09s - 69.13s] SPEAKER_04: Wow, good luck!
+[69.65s - 70.51s] SPEAKER_04: Yes, thank you.
+[70.63s - 73.56s] SPEAKER_04: Let's listen to more examples of lock-in.
+[77.77s - 81.08s] SPEAKER_00:  I really need to stop failing my driving test.
+[81.10s - 83.88s] SPEAKER_00: I'm going to have to just lock in and do loads of practice.
+[84.94s - 92.78s] SPEAKER_02: Right guys, I've done no work all day, so I've had a coffee and this afternoon I really just need to lock in and get some stuff done.
+[93.78s - 95.72s] SPEAKER_01: I never see my kids in the evening anymore.
+[96.14s - 97.93s] SPEAKER_01: They're locking in for their exams.
+[102.02s - 103.71s] SPEAKER_03:  Lock-in is informal.
+[103.93s - 108.07s] SPEAKER_03: You're more likely to use it with friends and family than in a professional setting.
+[108.37s - 115.92s] SPEAKER_03: We can also describe someone as being locked in, meaning they're doing something with extreme focus.
+[116.20s - 120.21s] SPEAKER_03: Well, I was definitely locked in last night and I'm ready for this exam.
+[120.39s - 121.43s] SPEAKER_03: Good luck!
+[121.41s - 125.22s] SPEAKER_04:  And we'll be back next time with another useful English phrase.
+[125.56s - 126.08s] SPEAKER_04: See you soon.
+[126.22s - 126.62s] SPEAKER_03: Goodbye.
+[126.66s - 130.66s] SPEAKER_03: Thanks for listening to this BBC Learning English podcast.
+[131.08s - 133.54s] SPEAKER_03: Have you tried any of our other podcasts?
+[134.19s - 136.09s] SPEAKER_03: Learn English from news headlines.
+[136.75s - 139.87s] SPEAKER_03: Hear classic stories in English you can understand.
+[140.53s - 142.27s] SPEAKER_03: Listen to real conversations.
+[142.91s - 149.58s] SPEAKER_03: And explore stories from around the world, all while learning vocabulary, grammar and pronunciation.
+[149.56s - 157.80s] SPEAKER_03:  Find all our podcasts by searching BBC Learning English in your podcast app or visit bbclearningenglish.com.

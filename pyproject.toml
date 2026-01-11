@@ -1,0 +1,21 @@
+[project]
+name = "audio-transcriber-whisperx"
+version = "0.1.0"
+description = "Audio transcription tool using WhisperX with speaker diarization"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "whisperx>=3.7.0,<4.0.0",
+    "torch>=2.8.0",
+    "torchaudio>=2.8.0", 
+    "python-dotenv>=1.2.0,<2.0.0",
+    "tqdm>=4.67.0,<5.0.0",
+    "pyannote-audio>=3.4.0,<4.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+find-links = ["https://download.pytorch.org/whl/cu128"]
