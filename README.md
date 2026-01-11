@@ -12,6 +12,10 @@ A powerful Python-based audio transcription tool that combines state-of-the-art 
 - **Batch Processing**: Efficient processing with configurable batch sizes
 - **Word-level Alignment**: Accurate word-level timestamps for detailed analysis
 - **Progress Tracking**: Real-time progress indication during processing
+- **CLI Interface**: Command-line interface with flexible argument parsing
+- **Custom Speaker Names**: Map speaker IDs to custom names (e.g., "John", "Mary")
+- **Speaker Constraints**: Configure minimum and maximum number of speakers
+- **Language Override**: Manual language specification to override auto-detection
 
 ## Requirements
 
@@ -100,17 +104,56 @@ cp .env_example .env
 ## Usage
 
 ### Basic Usage
+
+**Option A: Using the CLI script (recommended)**
+```bash
+# Basic usage with default settings
+python transcribe.py
+
+# Specify input and output files
+python transcribe.py -i ./input/your-audio-file.mp3 -o ./output/your-transcription.txt
+
+# Specify language (optional, auto-detects if not provided)
+python transcribe.py -i ./input/audio.mp3 -l pt  # Portuguese
+python transcribe.py -i ./input/audio.mp3 -l en  # English
+
+# Set speaker constraints
+python transcribe.py -i ./input/audio.mp3 --min-speakers 2 --max-speakers 4
+
+# Use custom speaker names
+python transcribe.py -i ./input/audio.mp3 --speaker-names "SPEAKER_00:John,SPEAKER_01:Mary"
+# Or using JSON format
+python transcribe.py -i ./input/audio.mp3 --speaker-names '{"SPEAKER_00": "John", "SPEAKER_01": "Mary"}'
+```
+
+**Option B: Using the main script**
 1. Place your audio file in the `input/` directory
-2. Update the `audio_file` variable in `demo.py` with your file path
+2. Update the `audio_file` variable in `main.py` with your file path
 3. Run the transcription:
 
 ```bash
-python demo.py
+python main.py
 ```
 
 ### Configuration Options
 
-Edit the configuration variables in `demo.py`:
+**CLI Arguments (for transcribe.py):**
+```bash
+# View all available options
+python transcribe.py --help
+
+# Key options:
+-i, --input          Input audio file path (default: ./input/audio-pt_BR.mp3)
+-o, --output         Output transcription file path (default: ./output/transcription-pt_BR.txt)
+-l, --language       Language code (e.g., 'pt', 'en', 'es'). Auto-detect if not specified.
+--min-speakers       Minimum number of speakers (optional)
+--max-speakers       Maximum number of speakers (optional)
+--speaker-names      Speaker name mapping (optional)
+```
+
+**Direct Configuration (for main.py):**
+
+Edit the configuration variables in `main.py`:
 
 ```python
 # GPU/CPU selection
@@ -125,6 +168,51 @@ compute_type = "float16"  # Use "int8" for lower memory/accuracy
 
 # Model storage
 model_dir = "./models"   # Local model cache directory
+```
+
+### CLI Usage Examples
+
+**Basic transcription:**
+```bash
+# Transcribe with default settings
+python transcribe.py -i ./input/meeting.mp3
+
+# Transcribe with custom output location
+python transcribe.py -i ./input/meeting.mp3 -o ./output/meeting_notes.txt
+```
+
+**Multi-language support:**
+```bash
+# Auto-detect language (default)
+python transcribe.py -i ./input/international_call.mp3
+
+# Force specific language
+python transcribe.py -i ./input/portuguese_audio.mp3 -l pt
+python transcribe.py -i ./input/english_audio.mp3 -l en
+python transcribe.py -i ./input/spanish_audio.mp3 -l es
+```
+
+**Speaker management:**
+```bash
+# Set speaker constraints
+python transcribe.py -i ./input/interview.mp3 --min-speakers 2 --max-speakers 3
+
+# Use custom speaker names (comma-separated format)
+python transcribe.py -i ./input/meeting.mp3 --speaker-names "SPEAKER_00:Alice,SPEAKER_01:Bob,SPEAKER_02:Carol"
+
+# Use custom speaker names (JSON format)
+python transcribe.py -i ./input/meeting.mp3 --speaker-names '{"SPEAKER_00": "CEO", "SPEAKER_01": "CTO", "SPEAKER_02": "CFO"}'
+```
+
+**Complete example with all options:**
+```bash
+python transcribe.py \
+  -i ./input/board_meeting.mp3 \
+  -o ./output/board_meeting_transcript.txt \
+  -l en \
+  --min-speakers 3 \
+  --max-speakers 5 \
+  --speaker-names "SPEAKER_00:Chairman,SPEAKER_01:CEO,SPEAKER_02:Board Member"
 ```
 
 ### Performance Tuning
@@ -175,11 +263,13 @@ The transcription is saved to the `output/` directory with the following format:
 
 ```
 audio-transcriber-whisperx/
-├── demo.py              # Main application script
+├── main.py              # Main application script (basic usage)
+├── transcribe.py        # CLI script with advanced options
 ├── pyproject.toml       # Project configuration
 ├── requirements.txt     # Dependencies
 ├── LICENSE              # MIT license
 ├── README.md            # Project documentation
+├── AGENTS.md            # Development guide
 ├── .env_example         # Environment template
 ├── input/              # Place audio files here
 ├── output/             # Transcription results
@@ -240,12 +330,22 @@ mypy .
 ### Testing
 Currently no test suite exists. Contributions welcome!
 
+### Development Guidelines
+For detailed development guidelines, code style conventions, and project architecture information, see the [AGENTS.md](AGENTS.md) file. This guide includes:
+
+- Code style guidelines and formatting standards
+- Import organization and naming conventions
+- Error handling best practices
+- Project architecture overview
+- Performance considerations
+- Security guidelines
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Ensure code follows the style guidelines in `AGENTS.md`
+4. Ensure code follows the style guidelines in [AGENTS.md](AGENTS.md)
 5. Submit a pull request
 
 ## License

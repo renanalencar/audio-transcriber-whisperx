@@ -1,15 +1,15 @@
-[5.57s - 9.11s] SPEAKER_00:  Guardar uma coisa não é escondê-la ou trancá-la.
-[10.51s - 14.96s] SPEAKER_00: Em cofre não se guarda coisa alguma.
-[14.98s - 20.30s] SPEAKER_00: Em cofre perde-se a coisa vista.
-[20.32s - 32.31s] SPEAKER_00: Guardar uma coisa é olhá-la, fitá-la, mirá-la, por admirá-la.
-[32.34s - 32.86s] SPEAKER_00: Isto é,
-[33.43s - 37.41s] SPEAKER_00:  Iluminá-la ou ser por ela iluminado.
-[37.43s - 39.60s] SPEAKER_00: Guardar uma coisa é vigiá-la.
-[39.80s - 41.96s] SPEAKER_00: Isso é fazer vigília por ela.
-[42.90s - 44.84s] SPEAKER_00: Isso é velar por ela.
-[44.87s - 47.27s] SPEAKER_00: Isso é estar acordado por ela.
-[47.85s - 52.36s] SPEAKER_00: Isto é estar por ela.
-[52.38s - 55.88s] SPEAKER_00: Ou ser por ela.
-[55.90s - 60.65s] SPEAKER_00: Por isso, melhor se guarda o vôo de um pássaro
-[62.35s - 63.81s] SPEAKER_00:  do que um pássaro sem voos.
-[64.66s - 73.76s] SPEAKER_00: Por isso se escreve, por isso se diz, por isso se publica, por isso se declara e se declama um poema.
+[5.57s - 9.11s] Fernanda:  Guardar uma coisa não é escondê-la ou trancá-la.
+[10.51s - 14.96s] Fernanda: Em cofre não se guarda coisa alguma.
+[14.98s - 20.30s] Fernanda: Em cofre perde-se a coisa vista.
+[20.32s - 32.31s] Fernanda: Guardar uma coisa é olhá-la, fitá-la, mirá-la, por admirá-la.
+[32.34s - 32.86s] Fernanda: Isto é,
+[33.43s - 37.41s] Fernanda:  Iluminá-la ou ser por ela iluminado.
+[37.43s - 39.60s] Fernanda: Guardar uma coisa é vigiá-la.
+[39.80s - 41.96s] Fernanda: Isso é fazer vigília por ela.
+[42.90s - 44.84s] Fernanda: Isso é velar por ela.
+[44.87s - 47.27s] Fernanda: Isso é estar acordado por ela.
+[47.85s - 52.36s] Fernanda: Isto é estar por ela.
+[52.38s - 55.88s] Fernanda: Ou ser por ela.
+[55.90s - 60.65s] Fernanda: Por isso, melhor se guarda o vôo de um pássaro
+[62.35s - 63.81s] Fernanda:  do que um pássaro sem voos.
+[64.66s - 73.76s] Fernanda: Por isso se escreve, por isso se diz, por isso se publica, por isso se declara e se declama um poema.

@@ -22,9 +22,9 @@ pip install -r requirements.txt
 ### Running the Application
 ```bash
 # Run the main transcription script
-python demo.py
+python main.py
 
-# For different audio files, modify the audio_file variable in demo.py
+# For different audio files, modify the audio_file variable in main.py
 # or create environment-specific configurations
 ```
 
@@ -52,7 +52,7 @@ isort .                         # Sort imports
 ## Code Style Guidelines
 
 ### Import Organization
-Based on `demo.py`, follow this import order:
+Based on `main.py`, follow this import order:
 1. Standard library imports
 2. Third-party library imports (torch, warnings)
 3. Local application imports (whisperx, dotenv)
@@ -103,7 +103,7 @@ warnings.filterwarnings("ignore", message=".*torchaudio._backend.list_audio_back
 ### File Structure Conventions
 ```
 project_root/
-├── demo.py              # Main application entry point
+├── main.py              # Main application entry point
 ├── pyproject.toml       # Project configuration and dependencies
 ├── requirements.txt     # Pip-compatible dependencies
 ├── .env                 # Environment variables (DO NOT commit)
@@ -147,7 +147,7 @@ Required environment variables (see `.env_example`):
 5. **Output Generation**: Create formatted transcription files
 
 ### Configuration Parameters
-Key configurable parameters in `demo.py`:
+Key configurable parameters in `main.py`:
 - `device`: Computing device ("cuda" for GPU, "cpu" for CPU)
 - `batch_size`: Processing batch size (adjust for GPU memory)
 - `compute_type`: Precision ("float16" or "int8")
