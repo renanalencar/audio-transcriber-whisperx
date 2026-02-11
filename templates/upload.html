@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Transcription with WhisperX</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .main-container {
+            padding: 40px 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-header {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 25px;
+            border: none;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+        
+        .upload-zone.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            padding: 12px 40px;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: var(--success-gradient);
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .progress {
+            height: 30px;
+            border-radius: 15px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: var(--primary-gradient);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.3s ease;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        
+        .transcription-text {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            border-left: 4px solid #667eea;
+        }
+        
+        .badge-custom {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .spinner-border-sm {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-info {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #e8ebff;
+            border-radius: 8px;
+            margin: 10px 0;
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .speaker-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            margin: 5px 5px 5px 0;
+            font-size: 0.9rem;
+        }
+        
+        .speaker-badge .remove-speaker {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .speaker-badge .remove-speaker:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container main-container">
+        <!-- Header Card -->
+        <div class="card mb-4 fade-in">
+            <div class="card-header text-center">
+                <h1 class="mb-0">
+                    <i class="bi bi-mic-fill me-2"></i>
+                    Audio Transcription with WhisperX
+                </h1>
+                <p class="mb-0 mt-2 opacity-90">AI-powered transcription with speaker diarization</p>
+            </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="card mb-4 fade-in" id="uploadCard">
+            <div class="card-body p-4">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="upload-zone" id="uploadZone">
+                        <i class="bi bi-cloud-upload upload-icon"></i>
+                        <h4 class="mb-3">Drop your file here or click to browse</h4>
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-file-earmark-music me-1"></i>
+                            Audio: MP3, WAV, M4A, FLAC, OGG
+                            <span class="mx-2">|</span>
+                            <i class="bi bi-camera-video me-1"></i>
+                            Video: MP4, AVI, MOV, MKV, WebM
+                        </p>
+                        <input type="file" 
+                               class="d-none" 
+                               name="audio_file" 
+                               id="audioFile" 
+                               accept="audio/*,video/*" 
+                               required>
+                        <div id="fileInfo" class="file-info d-none">
+                            <i class="bi bi-file-earmark-check me-2"></i>
+                            <span id="fileName"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Speaker Names Section -->
+                    <div class="mt-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-people-fill me-2"></i>
+                            Speaker Names (Optional)
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            Add speaker names in the order they appear. This helps identify speakers in the transcription.
+                        </p>
+                        <div class="input-group mb-3">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="speakerNameInput" 
+                                   placeholder="e.g., John Smith">
+                            <button class="btn btn-outline-secondary" type="button" onclick="addSpeaker()">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Add Speaker
+                            </button>
+                        </div>
+                        <div id="speakerList" class="mb-3"></div>
+                        <input type="hidden" id="speakerNamesData" name="speaker_names" value="[]">
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="bi bi-magic me-2"></i>
+                            Start Transcription
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Progress Card -->
+        <div class="card mb-4 d-none fade-in" id="progressCard">
+            <div class="card-body p-4">
+                <h5 class="mb-3">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Processing...
+                </h5>
+                <div class="progress mb-3">
+                    <div class="progress-bar" 
+                         id="progressFill" 
+                         role="progressbar" 
+                         style="width: 0%"
+                         aria-valuenow="0" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">0%</div>
+                </div>
+                <p class="text-muted mb-0" id="progressMessage">
+                    <i class="bi bi-hourglass-split me-2"></i>
+                    Starting...
+                </p>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-danger d-none fade-in" id="errorAlert" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Error:</strong> <span id="errorMessage"></span>
+        </div>
+
+        <!-- Result Card -->
+        <div class="card d-none fade-in" id="resultCard">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Transcription Complete!
+                    </h4>
+                    <span class="badge badge-custom bg-success">
+                        <i class="bi bi-check2 me-1"></i>
+                        Success
+                    </span>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong><i class="bi bi-file-earmark me-2"></i>File:</strong>
+                            <span id="fileName2" class="ms-2 text-muted"></span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong><i class="bi bi-translate me-2"></i>Language:</strong>
+                            <span id="language" class="ms-2 text-muted"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-square-quote me-2"></i>
+                            Transcription
+                        </h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="copyTranscription()">
+                                <i class="bi bi-clipboard me-1"></i>
+                                Copy
+                            </button>
+                            <button class="btn btn-sm btn-success" onclick="downloadTranscription()">
+                                <i class="bi bi-download me-1"></i>
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                    <div class="transcription-text" id="transcriptionText"></div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Transcribe Another File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let pollInterval;
+        let currentJobId = null;
+        let speakerNames = [];
+
+        // File input handling
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('audioFile');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileNameSpan = document.getElementById('fileName');
+
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                showFileName(files[0].name);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                showFileName(e.target.files[0].name);
+            }
+        });
+
+        function showFileName(name) {
+            fileNameSpan.textContent = name;
+            fileInfo.classList.remove('d-none');
+        }
+        
+        // Speaker management
+        function addSpeaker() {
+            const input = document.getElementById('speakerNameInput');
+            const name = input.value.trim();
+            
+            if (name) {
+                speakerNames.push(name);
+                updateSpeakerList();
+                input.value = '';
+                input.focus();
+            }
+        }
+        
+        function removeSpeaker(index) {
+            speakerNames.splice(index, 1);
+            updateSpeakerList();
+        }
+        
+        function updateSpeakerList() {
+            const listContainer = document.getElementById('speakerList');
+            const hiddenInput = document.getElementById('speakerNamesData');
+            
+            if (speakerNames.length === 0) {
+                listContainer.innerHTML = '';
+            } else {
+                listContainer.innerHTML = speakerNames.map((name, index) => `
+                    <span class="speaker-badge">
+                        <i class="bi bi-person-fill me-2"></i>
+                        Speaker ${index + 1}: ${name}
+                        <button type="button" class="remove-speaker" onclick="removeSpeaker(${index})">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                `).join('');
+            }
+            
+            hiddenInput.value = JSON.stringify(speakerNames);
+        }
+        
+        // Allow Enter key to add speaker
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('speakerNameInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSpeaker();
+                }
+            });
+        });
+
+        // Form submission
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            // Show progress card, hide others
+            document.getElementById('uploadCard').classList.add('d-none');
+            document.getElementById('progressCard').classList.remove('d-none');
+            document.getElementById('resultCard').classList.add('d-none');
+            document.getElementById('errorAlert').classList.add('d-none');
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('progressFill').textContent = '0%';
+
+            // Upload file
+            const formData = new FormData();
+            formData.append('audio_file', file);
+            formData.append('speaker_names', JSON.stringify(speakerNames));
+
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.job_id) {
+                    currentJobId = data.job_id;
+                    pollProgress(data.job_id);
+                } else {
+                    showError(data.error || 'Failed to start transcription');
+                }
+            } catch (error) {
+                showError('Failed to upload file: ' + error.message);
+            }
+        });
+
+        async function pollProgress(jobId) {
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/progress/${jobId}`);
+                    const data = await response.json();
+
+                    // Update progress bar
+                    const progress = data.progress || 0;
+                    document.getElementById('progressFill').style.width = progress + '%';
+                    document.getElementById('progressFill').textContent = progress + '%';
+                    document.getElementById('progressMessage').innerHTML = 
+                        `<i class="bi bi-hourglass-split me-2"></i>${data.message || 'Processing...'}`;
+
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        showResult(data.result);
+                    } else if (data.status === 'failed') {
+                        clearInterval(pollInterval);
+                        showError(data.error || 'Transcription failed');
+                    }
+                } catch (error) {
+                    clearInterval(pollInterval);
+                    showError('Failed to get progress: ' + error.message);
+                }
+            }, 1000);
+        }
+
+        function showResult(result) {
+            document.getElementById('progressCard').classList.add('d-none');
+            document.getElementById('resultCard').classList.remove('d-none');
+            document.getElementById('fileName2').textContent = result.file;
+            document.getElementById('language').textContent = result.language.toUpperCase();
+            document.getElementById('transcriptionText').textContent = result.transcription;
+        }
+
+        function showError(message) {
+            document.getElementById('uploadCard').classList.remove('d-none');
+            document.getElementById('progressCard').classList.add('d-none');
+            document.getElementById('errorAlert').classList.remove('d-none');
+            document.getElementById('errorMessage').textContent = message;
+            
+            // Reset form
+            fileInput.value = '';
+            fileInfo.classList.add('d-none');
+        }
+
+        function copyTranscription() {
+            const text = document.getElementById('transcriptionText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copied!';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-primary');
+                }, 2000);
+            });
+        }
+
+        function downloadTranscription() {
+            if (!currentJobId) {
+                alert('No transcription available');
+                return;
+            }
+            window.location.href = `/download/${currentJobId}`;
+        }
+    </script>
+</body>
+</html>

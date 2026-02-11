@@ -67,3 +67,6 @@ Thumbs.db
 # uv
 .uv/
 uv.lock
+.continue/mcpServers/mcp-server.yaml
+logs/error.log
+logs/app.log

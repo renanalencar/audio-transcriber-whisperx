@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  whisperx-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audio-transcriber-whisperx
+    
+    # Enable GPU support (requires nvidia-docker)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    # Environment variables
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - CUDA_VISIBLE_DEVICES=0
+    
+    # Port mapping
+    ports:
+      - "5000:5000"
+    
+    # Volume mounts
+    volumes:
+      # Mount models directory to persist downloaded models
+      - ./models:/app/models
+      # Mount output directory
+      - ./output:/app/output
+      # Optional: mount input directory for testing
+      - ./input:/app/input
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
