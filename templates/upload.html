@@ -189,6 +189,45 @@
         .speaker-badge .remove-speaker:hover {
             background: rgba(255, 255, 255, 0.5);
         }
+        
+        .form-select {
+            border: 2px solid #e8ebff;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .form-control {
+            border: 2px solid #e8ebff;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .input-group .btn-outline-secondary {
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 0 10px 10px 0;
+            font-weight: 600;
+        }
+        
+        .input-group .btn-outline-secondary:hover {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -230,6 +269,24 @@
                         </div>
                     </div>
                     
+                    <!-- Language Selection -->
+                    <div class="mt-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-translate me-2"></i>
+                            Language (Optional)
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            Select the primary language spoken in the audio. Leave as "Auto-detect" for automatic detection.
+                        </p>
+                        <select class="form-select" id="languageSelect" name="language">
+                            <option value="" selected>Auto-detect</option>
+                            <option value="en">English</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                        </select>
+                    </div>
+                    
                     <!-- Speaker Names Section -->
                     <div class="mt-4">
                         <h5 class="mb-3">
@@ -243,7 +300,8 @@
                             <input type="text" 
                                    class="form-control" 
                                    id="speakerNameInput" 
-                                   placeholder="e.g., John Smith">
+                                   placeholder="e.g., John Smith"
+                                   style="border-radius: 10px 0 0 10px;">
                             <button class="btn btn-outline-secondary" type="button" onclick="addSpeaker()">
                                 <i class="bi bi-plus-circle me-1"></i>
                                 Add Speaker
@@ -469,6 +527,12 @@
             const formData = new FormData();
             formData.append('audio_file', file);
             formData.append('speaker_names', JSON.stringify(speakerNames));
+            
+            // Get selected language
+            const language = document.getElementById('languageSelect').value;
+            if (language) {
+                formData.append('language', language);
+            }
 
             try {
                 const response = await fetch('/transcribe', {

@@ -199,7 +199,7 @@ def update_progress(job_id, step, message):
     logger.info(f"Job {job_id[:8]}: {step}% - {message}")
 
 
-def transcribe_audio(job_id, temp_path, filename, speaker_names=None):
+def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=None):
     """Background transcription task."""
     logger.info(f"Starting transcription for job {job_id[:8]} - File: {filename}")
     start_time = datetime.now()
@@ -222,8 +222,12 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None):
 
         # 3. Transcribe
         update_progress(job_id, 37, "Transcribing audio...")
-        logger.debug(f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size}")
-        result = model.transcribe(audio, batch_size=batch_size)
+        if language:
+            logger.debug(f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size}, language={language}")
+            result = model.transcribe(audio, batch_size=batch_size, language=language)
+        else:
+            logger.debug(f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size} (auto-detect language)")
+            result = model.transcribe(audio, batch_size=batch_size)
 
         # Check if transcription has required fields
         if "language" not in result:
@@ -349,6 +353,13 @@ def transcribe():
                     logger.info(f"Speaker names provided: {speaker_names}")
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse speaker_names JSON: {e}")
+        
+        # Get language from request (optional)
+        language = request.form.get("language", None)
+        if language:
+            logger.info(f"Language specified: {language}")
+        else:
+            logger.info("Language: auto-detect")
 
         # Save to temp
         filename = secure_filename(audio_file.filename)
@@ -389,12 +400,13 @@ def transcribe():
             "message": "Starting transcription...",
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
-            "speaker_names": speaker_names
+            "speaker_names": speaker_names,
+            "language": language
         }
         logger.info(f"Created job {job_id[:8]} for file: {filename}")
 
         # Start background transcription
-        thread = threading.Thread(target=transcribe_audio, args=(job_id, audio_path, filename, speaker_names))
+        thread = threading.Thread(target=transcribe_audio, args=(job_id, audio_path, filename, speaker_names, language))
         thread.daemon = True
         thread.start()
         logger.debug(f"Started background thread for job {job_id[:8]}")
