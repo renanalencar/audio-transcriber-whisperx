@@ -3,6 +3,7 @@ import os
 # Ensure ffmpeg is dynamically injected into PATH for subprocess calls
 try:
     import imageio_ffmpeg
+
     ffmpeg_path = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
     if ffmpeg_path not in os.environ["PATH"]:
         os.environ["PATH"] += os.pathsep + ffmpeg_path
@@ -93,7 +94,7 @@ progress_bar.update(1)
 # save model to local path (optional)
 model_dir = "./models"
 model = whisperx.load_model(
-    "large-v2", device, compute_type=compute_type, download_root=model_dir
+    os.getenv("MODEL_ID"), device, compute_type=compute_type, download_root=model_dir
 )
 
 log("Loading audio file...")
@@ -131,8 +132,8 @@ log("Loading diarization model...")
 progress_bar.set_description(steps[4])
 diarize_model = DiarizationPipeline(
     model_name=os.path.abspath(os.path.join(model_dir, "pyannote", "config.yaml")),
-    use_auth_token=None, 
-    device=device
+    use_auth_token=None,
+    device=device,
 )
 progress_bar.update(1)
 

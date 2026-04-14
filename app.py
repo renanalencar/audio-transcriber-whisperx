@@ -5,6 +5,7 @@ import os
 # Ensure ffmpeg is dynamically injected into PATH for subprocess calls
 try:
     import imageio_ffmpeg
+
     ffmpeg_path = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
     if ffmpeg_path not in os.environ["PATH"]:
         os.environ["PATH"] += os.pathsep + ffmpeg_path
@@ -39,56 +40,57 @@ warnings.filterwarnings("ignore", message=".*torchaudio._backend.list_audio_back
 warnings.filterwarnings("ignore", message=".*Model was trained with.*")
 warnings.filterwarnings("ignore", category=UserWarning, message=".*TensorFloat-32.*")
 
+
 # Configure logging
 def setup_logging():
     """Configure logging for the application."""
     # Create logs directory if it doesn't exist
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
-    
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
     # Configure root logger
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-    
+
     # Create formatters
     detailed_formatter = logging.Formatter(
-        '[%(asctime)s] %(levelname)s in %(module)s (%(funcName)s:%(lineno)d): %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "[%(asctime)s] %(levelname)s in %(module)s (%(funcName)s:%(lineno)d): %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     simple_formatter = logging.Formatter(
-        '[%(asctime)s] %(levelname)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "[%(asctime)s] %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
-    
+
     # File handler for all logs
     file_handler = RotatingFileHandler(
-        'logs/app.log',
+        "logs/app.log",
         maxBytes=10485760,  # 10MB
-        backupCount=5
+        backupCount=5,
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(detailed_formatter)
-    
+
     # File handler for errors only
     error_handler = RotatingFileHandler(
-        'logs/error.log',
+        "logs/error.log",
         maxBytes=10485760,  # 10MB
-        backupCount=5
+        backupCount=5,
     )
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(detailed_formatter)
-    
+
     # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(simple_formatter)
-    
+
     # Add handlers
     logger.addHandler(file_handler)
     logger.addHandler(error_handler)
     logger.addHandler(console_handler)
-    
+
     return logger
+
 
 # Setup logging
 logger = setup_logging()
@@ -106,22 +108,26 @@ logger.info("Environment variables loaded")
 # Fix for PyTorch 2.8+ compatibility with pyannote-audio
 original_torch_load = torch.load
 
+
 def patched_torch_load(*args, **kwargs):
     kwargs["weights_only"] = False
     return original_torch_load(*args, **kwargs)
 
+
 torch.load = patched_torch_load
-torch.serialization.add_safe_globals([
-    torch.torch_version.TorchVersion,
-    Problem,
-    Specifications,
-    Resolution,
-    omegaconf.listconfig.ListConfig,
-    omegaconf.dictconfig.DictConfig,
-    omegaconf.base.ContainerMetadata,
-    omegaconf._utils.ValueKind,
-    typing.Any,
-])
+torch.serialization.add_safe_globals(
+    [
+        torch.torch_version.TorchVersion,
+        Problem,
+        Specifications,
+        Resolution,
+        omegaconf.listconfig.ListConfig,
+        omegaconf.dictconfig.DictConfig,
+        omegaconf.base.ContainerMetadata,
+        omegaconf._utils.ValueKind,
+        typing.Any,
+    ]
+)
 
 # Model config
 model_dir = "./models"
@@ -149,8 +155,19 @@ else:
     logger.warning("FFmpeg not found - video file support disabled")
 
 # Supported file extensions
-AUDIO_EXTENSIONS = {'.mp3', '.wav', '.m4a', '.flac', '.ogg', '.opus', '.wma', '.aac'}
-VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.m4v', '.mpeg', '.mpg'}
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".opus", ".wma", ".aac"}
+VIDEO_EXTENSIONS = {
+    ".mp4",
+    ".avi",
+    ".mov",
+    ".mkv",
+    ".flv",
+    ".wmv",
+    ".webm",
+    ".m4v",
+    ".mpeg",
+    ".mpg",
+}
 
 
 def is_video_file(filename):
@@ -171,26 +188,27 @@ def extract_audio_from_video(video_path, output_path):
         # -ac 1: convert to mono
         # -y: overwrite output file
         command = [
-            'ffmpeg',
-            '-i', video_path,
-            '-vn',  # no video
-            '-acodec', 'pcm_s16le',  # PCM 16-bit
-            '-ar', '16000',  # 16kHz sample rate
-            '-ac', '1',  # mono
-            '-y',  # overwrite
-            output_path
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-vn",  # no video
+            "-acodec",
+            "pcm_s16le",  # PCM 16-bit
+            "-ar",
+            "16000",  # 16kHz sample rate
+            "-ac",
+            "1",  # mono
+            "-y",  # overwrite
+            output_path,
         ]
-        
+
         result = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
         )
-        
+
         logger.info(f"Audio extracted successfully to: {output_path}")
         return True
-        
+
     except subprocess.CalledProcessError as e:
         logger.error(f"FFmpeg error: {e.stderr.decode()}")
         return False
@@ -217,13 +235,16 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
     """Background transcription task."""
     logger.info(f"Starting transcription for job {job_id[:8]} - File: {filename}")
     start_time = datetime.now()
-    
+
     try:
         # 1. Load Whisper model
         update_progress(job_id, 12, "Loading Whisper model...")
         logger.debug(f"Job {job_id[:8]}: Loading Whisper model from {model_dir}")
         model = whisperx.load_model(
-            "large-v2", device, compute_type=compute_type, download_root=model_dir
+            os.getenv("MODEL_ID"),
+            device,
+            compute_type=compute_type,
+            download_root=model_dir,
         )
         logger.debug(f"Job {job_id[:8]}: Model loaded successfully")
 
@@ -237,23 +258,33 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
         # 3. Transcribe
         update_progress(job_id, 37, "Transcribing audio...")
         if language:
-            logger.debug(f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size}, language={language}")
+            logger.debug(
+                f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size}, language={language}"
+            )
             result = model.transcribe(audio, batch_size=batch_size, language=language)
         else:
-            logger.debug(f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size} (auto-detect language)")
+            logger.debug(
+                f"Job {job_id[:8]}: Starting transcription with batch_size={batch_size} (auto-detect language)"
+            )
             result = model.transcribe(audio, batch_size=batch_size)
 
         # Check if transcription has required fields
         if "language" not in result:
-            logger.error(f"Job {job_id[:8]}: Transcription failed - no language detected")
+            logger.error(
+                f"Job {job_id[:8]}: Transcription failed - no language detected"
+            )
             raise ValueError("Transcription failed: no language detected")
         if "segments" not in result or not result["segments"]:
-            logger.error(f"Job {job_id[:8]}: Transcription failed - no segments generated")
+            logger.error(
+                f"Job {job_id[:8]}: Transcription failed - no segments generated"
+            )
             raise ValueError("Transcription failed: no segments generated")
-        
+
         detected_language = result["language"]
         segment_count = len(result["segments"])
-        logger.info(f"Job {job_id[:8]}: Transcription complete - Language: {detected_language}, Segments: {segment_count}")
+        logger.info(
+            f"Job {job_id[:8]}: Transcription complete - Language: {detected_language}, Segments: {segment_count}"
+        )
 
         # 4. Align whisper output
         update_progress(job_id, 50, "Aligning transcription...")
@@ -261,26 +292,33 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
             language_code=result["language"], device=device, model_dir=model_dir
         )
         result = whisperx.align(
-            result["segments"], model_a, metadata, audio, device, return_char_alignments=False
+            result["segments"],
+            model_a,
+            metadata,
+            audio,
+            device,
+            return_char_alignments=False,
         )
 
         # 5. Assign speaker labels
         update_progress(job_id, 62, "Loading diarization model...")
         logger.debug(f"Job {job_id[:8]}: Loading diarization model")
         diarize_model = DiarizationPipeline(
-            model_name=os.path.abspath(os.path.join(model_dir, "pyannote", "config.yaml")),
-            use_auth_token=None, 
-            device=device
+            model_name=os.path.abspath(
+                os.path.join(model_dir, "pyannote", "config.yaml")
+            ),
+            use_auth_token=None,
+            device=device,
         )
-        
+
         update_progress(job_id, 75, "Identifying speakers...")
         logger.debug(f"Job {job_id[:8]}: Running speaker diarization")
         diarize_segments = diarize_model(audio)
-        
+
         update_progress(job_id, 87, "Assigning speakers to segments...")
         logger.debug(f"Job {job_id[:8]}: Assigning speakers to words")
         result = whisperx.assign_word_speakers(diarize_segments, result)
-        
+
         # Count unique speakers
         speakers = set()
         for segment in result.get("segments", []):
@@ -291,14 +329,14 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
         # Format output
         update_progress(job_id, 95, "Formatting transcription...")
         transcription_text = []
-        
+
         # Create speaker name mapping
         speaker_mapping = {}
         if speaker_names and isinstance(speaker_names, list):
             for i, name in enumerate(speaker_names):
                 speaker_mapping[f"SPEAKER_{i:02d}"] = name
             logger.debug(f"Job {job_id[:8]}: Using speaker mapping: {speaker_mapping}")
-        
+
         for segment in result.get("segments", []):
             speaker = segment.get("speaker", "UNKNOWN")
             # Replace speaker ID with custom name if available
@@ -306,11 +344,13 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
                 speaker_display = speaker_mapping[speaker]
             else:
                 speaker_display = speaker
-            
+
             text = segment.get("text", "")
             start = segment.get("start", 0)
             end = segment.get("end", 0)
-            transcription_text.append(f"[{start:.2f}s - {end:.2f}s] {speaker_display}: {text}")
+            transcription_text.append(
+                f"[{start:.2f}s - {end:.2f}s] {speaker_display}: {text}"
+            )
 
         # Clean up temp file
         logger.debug(f"Job {job_id[:8]}: Cleaning up temp file")
@@ -324,13 +364,15 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
             "transcription": "\n".join(transcription_text),
             "segments": result.get("segments", []),
             "language": result.get("language", "unknown"),
-            "file": filename
+            "file": filename,
         }
-        
+
         # Calculate processing time
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
-        logger.info(f"Job {job_id[:8]}: Completed successfully in {processing_time:.2f}s")
+        logger.info(
+            f"Job {job_id[:8]}: Completed successfully in {processing_time:.2f}s"
+        )
 
     except Exception as e:
         logger.error(f"Job {job_id[:8]}: Failed with error: {str(e)}", exc_info=True)
@@ -344,14 +386,16 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
                 os.remove(temp_path)
                 logger.debug(f"Job {job_id[:8]}: Temp file cleaned up after error")
         except Exception as cleanup_error:
-            logger.warning(f"Job {job_id[:8]}: Failed to clean up temp file: {cleanup_error}")
+            logger.warning(
+                f"Job {job_id[:8]}: Failed to clean up temp file: {cleanup_error}"
+            )
 
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
     try:
         logger.info(f"Transcription request received from {request.remote_addr}")
-        
+
         if "audio_file" not in request.files:
             logger.warning("No file uploaded in request")
             return jsonify({"error": "No file uploaded"}), 400
@@ -360,18 +404,20 @@ def transcribe():
         if audio_file.filename == "":
             logger.warning("Empty filename in request")
             return jsonify({"error": "No file selected"}), 400
-        
+
         # Get speaker names from request (optional)
         speaker_names = None
         if "speaker_names" in request.form:
             try:
                 speaker_names_json = request.form["speaker_names"]
-                speaker_names = json.loads(speaker_names_json) if speaker_names_json else None
+                speaker_names = (
+                    json.loads(speaker_names_json) if speaker_names_json else None
+                )
                 if speaker_names:
                     logger.info(f"Speaker names provided: {speaker_names}")
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse speaker_names JSON: {e}")
-        
+
         # Get language from request (optional)
         language = request.form.get("language", None)
         if language:
@@ -384,27 +430,33 @@ def transcribe():
         temp_path = os.path.join(tempfile.gettempdir(), filename)
         logger.debug(f"Saving uploaded file to: {temp_path}")
         audio_file.save(temp_path)
-        
+
         file_size = os.path.getsize(temp_path) / (1024 * 1024)  # MB
         logger.info(f"File uploaded: {filename} ({file_size:.2f} MB)")
-        
+
         # Check if it's a video file and extract audio
         audio_path = temp_path
         extracted_audio = False
         if is_video_file(filename):
             if not ffmpeg_available:
-                logger.error(f"Video file uploaded but FFmpeg not available: {filename}")
+                logger.error(
+                    f"Video file uploaded but FFmpeg not available: {filename}"
+                )
                 os.remove(temp_path)
-                return jsonify({"error": "Video files not supported (FFmpeg not installed)"}), 400
-            
+                return jsonify(
+                    {"error": "Video files not supported (FFmpeg not installed)"}
+                ), 400
+
             logger.info(f"Video file detected: {filename}, extracting audio...")
-            audio_path = os.path.join(tempfile.gettempdir(), f"extracted_{uuid.uuid4().hex[:8]}.wav")
-            
+            audio_path = os.path.join(
+                tempfile.gettempdir(), f"extracted_{uuid.uuid4().hex[:8]}.wav"
+            )
+
             if not extract_audio_from_video(temp_path, audio_path):
                 logger.error(f"Failed to extract audio from video: {filename}")
                 os.remove(temp_path)
                 return jsonify({"error": "Failed to extract audio from video"}), 400
-            
+
             # Remove original video file
             os.remove(temp_path)
             extracted_audio = True
@@ -419,25 +471,24 @@ def transcribe():
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
             "speaker_names": speaker_names,
-            "language": language
+            "language": language,
         }
         logger.info(f"Created job {job_id[:8]} for file: {filename}")
 
         # Start background transcription
-        thread = threading.Thread(target=transcribe_audio, args=(job_id, audio_path, filename, speaker_names, language))
+        thread = threading.Thread(
+            target=transcribe_audio,
+            args=(job_id, audio_path, filename, speaker_names, language),
+        )
         thread.daemon = True
         thread.start()
         logger.debug(f"Started background thread for job {job_id[:8]}")
-        
+
         message = "Transcription started"
         if extracted_audio:
             message = "Audio extracted from video, transcription started"
 
-        return jsonify({
-            "job_id": job_id,
-            "status": "processing",
-            "message": message
-        })
+        return jsonify({"job_id": job_id, "status": "processing", "message": message})
 
     except Exception as e:
         logger.error(f"Error in transcribe endpoint: {str(e)}", exc_info=True)
@@ -448,25 +499,25 @@ def transcribe():
 def get_progress(job_id):
     """Get progress of a transcription job."""
     logger.debug(f"Progress check for job {job_id[:8]}")
-    
+
     if job_id not in jobs:
         logger.warning(f"Progress requested for unknown job: {job_id[:8]}")
         return jsonify({"error": "Job not found"}), 404
-    
+
     job = jobs[job_id]
     response = {
         "status": job["status"],
         "progress": job["progress"],
-        "message": job["message"]
+        "message": job["message"],
     }
-    
+
     if job["status"] == "completed":
         response["result"] = job["result"]
         logger.debug(f"Job {job_id[:8]}: Returning completed result")
     elif job["status"] == "failed":
         response["error"] = job.get("error", "Unknown error")
         logger.debug(f"Job {job_id[:8]}: Returning error status")
-    
+
     return jsonify(response)
 
 
@@ -474,57 +525,61 @@ def get_progress(job_id):
 def download_transcription(job_id):
     """Download transcription as a text file."""
     logger.info(f"Download requested for job {job_id[:8]} from {request.remote_addr}")
-    
+
     if job_id not in jobs:
         logger.warning(f"Download requested for unknown job: {job_id[:8]}")
         return jsonify({"error": "Job not found"}), 404
-    
+
     job = jobs[job_id]
-    
+
     if job["status"] != "completed":
-        logger.warning(f"Download requested for incomplete job {job_id[:8]}: {job['status']}")
+        logger.warning(
+            f"Download requested for incomplete job {job_id[:8]}: {job['status']}"
+        )
         return jsonify({"error": "Transcription not completed yet"}), 400
-    
+
     result = job["result"]
     transcription = result["transcription"]
     filename = result["file"]
-    
+
     # Create a temporary file with the transcription
-    temp_file = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.txt')
+    temp_file = tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", delete=False, suffix=".txt"
+    )
     try:
         # Write header
         temp_file.write(f"Transcription of: {filename}\n")
         temp_file.write(f"Language: {result['language']}\n")
         temp_file.write(f"Generated: {job['created_at']}\n")
         temp_file.write("=" * 80 + "\n\n")
-        
+
         # Write transcription
         temp_file.write(transcription)
         temp_file.close()
-        
+
         # Generate download filename
         base_name = os.path.splitext(filename)[0]
         download_name = f"transcription_{base_name}.txt"
-        
+
         logger.info(f"Sending download file for job {job_id[:8]}: {download_name}")
-        
+
         return send_file(
             temp_file.name,
             as_attachment=True,
             download_name=download_name,
-            mimetype='text/plain'
+            mimetype="text/plain",
         )
     except Exception as e:
-        logger.error(f"Error creating download for job {job_id[:8]}: {str(e)}", exc_info=True)
+        logger.error(
+            f"Error creating download for job {job_id[:8]}: {str(e)}", exc_info=True
+        )
         if os.path.exists(temp_file.name):
             os.unlink(temp_file.name)
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
-    logger.info("="*60)
+    logger.info("=" * 60)
     logger.info("Starting Flask server on http://localhost:5000")
-    logger.info("="*60)
+    logger.info("=" * 60)
     app.run(debug=True, host="0.0.0.0", port=5000)
-
-
