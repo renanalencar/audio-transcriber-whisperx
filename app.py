@@ -231,17 +231,18 @@ def update_progress(job_id, step, message):
     logger.info(f"Job {job_id[:8]}: {step}% - {message}")
 
 
-def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=None):
+def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=None, whisper_model=None):
     """Background transcription task."""
     logger.info(f"Starting transcription for job {job_id[:8]} - File: {filename}")
     start_time = datetime.now()
 
     try:
         # 1. Load Whisper model
-        update_progress(job_id, 12, "Loading Whisper model...")
-        logger.debug(f"Job {job_id[:8]}: Loading Whisper model from {model_dir}")
+        model_name = whisper_model or os.getenv("MODEL_ID", "large-v3")
+        update_progress(job_id, 12, f"Loading Whisper model ({model_name})...")
+        logger.debug(f"Job {job_id[:8]}: Loading Whisper model {model_name} from {model_dir}")
         model = whisperx.load_model(
-            os.getenv("MODEL_ID"),
+            model_name,
             device,
             compute_type=compute_type,
             download_root=model_dir,
@@ -363,6 +364,8 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
         jobs[job_id]["result"] = {
             "transcription": "\n".join(transcription_text),
             "segments": result.get("segments", []),
+            "speaker_mapping": speaker_mapping,
+            "unique_speakers": list(speakers),
             "language": result.get("language", "unknown"),
             "file": filename,
         }
@@ -425,6 +428,10 @@ def transcribe():
         else:
             logger.info("Language: auto-detect")
 
+        # Get whisper model from request
+        whisper_model = request.form.get("whisper_model", os.getenv("MODEL_ID", "large-v3"))
+        logger.info(f"Whisper model selected: {whisper_model}")
+
         # Save to temp
         filename = secure_filename(audio_file.filename)
         temp_path = os.path.join(tempfile.gettempdir(), filename)
@@ -472,13 +479,14 @@ def transcribe():
             "updated_at": datetime.now().isoformat(),
             "speaker_names": speaker_names,
             "language": language,
+            "whisper_model": whisper_model,
         }
         logger.info(f"Created job {job_id[:8]} for file: {filename}")
 
         # Start background transcription
         thread = threading.Thread(
             target=transcribe_audio,
-            args=(job_id, audio_path, filename, speaker_names, language),
+            args=(job_id, audio_path, filename, speaker_names, language, whisper_model),
         )
         thread.daemon = True
         thread.start()
@@ -578,8 +586,78 @@ def download_transcription(job_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/update_job/<job_id>", methods=["POST"])
+def update_job(job_id):
+    """Update transcription text, language, and speaker mapping."""
+    logger.info(f"Update requested for job {job_id[:8]}")
+    
+    if job_id not in jobs:
+        return jsonify({"error": "Job not found"}), 404
+
+    job = jobs[job_id]
+
+    if job["status"] != "completed":
+        return jsonify({"error": "Transcription not completed yet"}), 400
+
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Update language
+        if "language" in data:
+            job["result"]["language"] = data["language"]
+
+        # Update speaker mapping
+        if "speaker_mapping" in data:
+            job["result"]["speaker_mapping"] = data["speaker_mapping"]
+
+        # Update segments text and speaker assignments if provided
+        if "segments" in data:
+            updated_segments = data["segments"]
+            for i, seg in enumerate(updated_segments):
+                if i < len(job["result"]["segments"]):
+                    job["result"]["segments"][i]["text"] = seg.get(
+                        "text", job["result"]["segments"][i].get("text", "")
+                    )
+                    if "speaker" in seg:
+                        job["result"]["segments"][i]["speaker"] = seg["speaker"]
+
+        # Rebuild transcription text block
+        transcription_text = []
+        speaker_mapping = job["result"].get("speaker_mapping", {})
+
+        for segment in job["result"]["segments"]:
+            speaker = segment.get("speaker", "UNKNOWN")
+            speaker_display = speaker_mapping.get(speaker, speaker)
+            text = segment.get("text", "")
+            start = segment.get("start", 0)
+            end = segment.get("end", 0)
+            transcription_text.append(
+                f"[{start:.2f}s - {end:.2f}s] {speaker_display}: {text}"
+            )
+
+        job["result"]["transcription"] = "\n".join(transcription_text)
+        job["updated_at"] = datetime.now().isoformat()
+
+        logger.info(f"Job {job_id[:8]} updated successfully")
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Job updated successfully",
+                "result": job["result"],
+            }
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error updating job {job_id[:8]}: {str(e)}", exc_info=True
+        )
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     logger.info("=" * 60)
     logger.info("Starting Flask server on http://localhost:5000")
     logger.info("=" * 60)
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5000, use_reloader=False)

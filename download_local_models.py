@@ -23,12 +23,17 @@ repos = [
 
 paths = {}
 for repo, filename, local_filename in repos:
+    local_path = os.path.join(model_dir, local_filename)
+    paths[repo] = local_path
+
+    if os.path.exists(local_path):
+        print(f"File {local_filename} already exists at {local_path}. Skipping download.")
+        continue
+
     print(f"Downloading {filename} from {repo}...")
     try:
         downloaded_path = hf_hub_download(repo_id=repo, filename=filename, token=token)
-        local_path = os.path.join(model_dir, local_filename)
         shutil.copy2(downloaded_path, local_path)
-        paths[repo] = local_path
         print(f"Saved to {local_path}")
     except Exception as e:
         print(f"Failed to download {repo}/{filename}: {e}")

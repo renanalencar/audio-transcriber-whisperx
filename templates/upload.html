@@ -1,24 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Transcription with WhisperX</title>
+    <title>Audio Transcriber</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const defaultTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-bs-theme', defaultTheme);
+    </script>
 </head>
 <body>
     <div class="container main-container">
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggleBtn" aria-label="Toggle theme">
+            <i class="bi bi-moon-stars-fill"></i>
+        </button>
+
         <!-- Header Card -->
         <div class="card mb-4 fade-in">
             <div class="card-header text-center">
                 <h1 class="mb-0">
                     <i class="bi bi-mic-fill me-2"></i>
-                    Audio Transcription with WhisperX
+                    Audio Transcriber
                 </h1>
                 <p class="mb-0 mt-2 opacity-90">AI-powered transcription with speaker diarization</p>
             </div>
@@ -65,6 +80,21 @@
                             <option value="pt">Portuguese</option>
                             <option value="es">Spanish</option>
                             <option value="fr">French</option>
+                        </select>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="mt-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-cpu me-2"></i>
+                            Whisper Model
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            Select the Whisper model version. Large-v3 might be more accurate but could be slower and require more memory.
+                        </p>
+                        <select class="form-select" id="modelSelect" name="whisper_model">
+                            <option value="large-v3" selected>whisper-large-v3 (Default)</option>
+                            <option value="large-v2">whisper-large-v2</option>
                         </select>
                     </div>
                     
@@ -153,9 +183,9 @@
                         </p>
                     </div>
                     <div class="col-md-6">
-                        <p class="mb-2">
+                        <p class="mb-2 d-flex align-items-center">
                             <strong><i class="bi bi-translate me-2"></i>Language:</strong>
-                            <span id="language" class="ms-2 text-muted"></span>
+                            <input type="text" id="language" class="form-control form-control-sm ms-2" style="width: auto; height: 30px;">
                         </p>
                     </div>
                 </div>
@@ -167,6 +197,10 @@
                             Transcription
                         </h5>
                         <div>
+                            <button class="btn btn-sm btn-warning me-2" onclick="saveEdits()" id="saveEditsBtn" style="display: none;">
+                                <i class="bi bi-save me-1"></i>
+                                Save Changes
+                            </button>
                             <button class="btn btn-sm btn-outline-primary me-2" onclick="copyTranscription()">
                                 <i class="bi bi-clipboard me-1"></i>
                                 Copy
@@ -177,7 +211,19 @@
                             </button>
                         </div>
                     </div>
-                    <div class="transcription-text" id="transcriptionText"></div>
+
+                    <!-- Global Speaker Mapping -->
+                    <div id="speakerMappingSection" class="mb-3 p-3 bg-dark bg-opacity-50 rounded border border-secondary d-none">
+                        <h6><i class="bi bi-people me-2"></i>Map Speakers</h6>
+                        <p class="text-muted small mb-2">Rename generated speaker IDs to actual names.</p>
+                        <div id="speakerMappingContainer" class="row g-2"></div>
+                    </div>
+
+                    <!-- Hidden raw string for copying -->
+                    <div class="transcription-text" id="transcriptionText" style="display: none;"></div>
+                    
+                    <!-- Segment Editor -->
+                    <div class="segment-editor-container" id="segmentEditorContainer" style="max-height: 500px; overflow-y: auto;"></div>
                 </div>
 
                 <div class="text-center mt-4">
@@ -197,6 +243,31 @@
         let pollInterval;
         let currentJobId = null;
         let speakerNames = [];
+
+        // Theme toggling
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = themeToggleBtn.querySelector('i');
+        
+        function updateThemeIcon(theme) {
+            if (theme === 'dark') {
+                themeIcon.className = 'bi bi-sun-fill';
+                themeIcon.style.color = '#eab308';
+            } else {
+                themeIcon.className = 'bi bi-moon-stars-fill';
+                themeIcon.style.color = 'currentColor';
+            }
+        }
+        
+        updateThemeIcon(document.documentElement.getAttribute('data-bs-theme'));
+        
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
 
         // File input handling
         const uploadZone = document.getElementById('uploadZone');
@@ -315,6 +386,12 @@
                 formData.append('language', language);
             }
 
+            // Get selected model
+            const whisperModel = document.getElementById('modelSelect').value;
+            if (whisperModel) {
+                formData.append('whisper_model', whisperModel);
+            }
+
             try {
                 const response = await fetch('/transcribe', {
                     method: 'POST',
@@ -361,12 +438,166 @@
             }, 1000);
         }
 
+        let currentResult = null;
+
         function showResult(result) {
+            currentResult = result;
             document.getElementById('progressCard').classList.add('d-none');
             document.getElementById('resultCard').classList.remove('d-none');
             document.getElementById('fileName2').textContent = result.file;
-            document.getElementById('language').textContent = result.language.toUpperCase();
+            document.getElementById('language').value = result.language;
             document.getElementById('transcriptionText').textContent = result.transcription;
+            
+            document.getElementById('saveEditsBtn').style.display = 'inline-block';
+            
+            renderSpeakerMapping();
+            renderSegments();
+        }
+
+        function renderSpeakerMapping() {
+            const section = document.getElementById('speakerMappingSection');
+            const container = document.getElementById('speakerMappingContainer');
+            
+            if (!currentResult.unique_speakers || currentResult.unique_speakers.length === 0) {
+                section.classList.add('d-none');
+                return;
+            }
+            
+            section.classList.remove('d-none');
+            container.innerHTML = '';
+            
+            const mapping = currentResult.speaker_mapping || {};
+            
+            currentResult.unique_speakers.forEach(speakerId => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4 col-sm-6';
+                const currentValue = mapping[speakerId] || '';
+                
+                col.innerHTML = `
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">${speakerId}</span>
+                        <input type="text" class="form-control" 
+                               value="${currentValue}" 
+                               placeholder="Name (e.g. John)" 
+                               onchange="updateSpeakerMapping('${speakerId}', this.value)">
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+        }
+        
+        function updateSpeakerMapping(speakerId, newName) {
+            if (!currentResult.speaker_mapping) {
+                currentResult.speaker_mapping = {};
+            }
+            if (newName.trim() === '') {
+                delete currentResult.speaker_mapping[speakerId];
+            } else {
+                currentResult.speaker_mapping[speakerId] = newName.trim();
+            }
+            renderSegments();
+        }
+
+        function renderSegments() {
+            const container = document.getElementById('segmentEditorContainer');
+            container.innerHTML = '';
+            
+            if (!currentResult.segments || currentResult.segments.length === 0) {
+                container.innerHTML = '<p class="text-muted">No segments to edit.</p>';
+                return;
+            }
+            
+            const mapping = currentResult.speaker_mapping || {};
+            
+            currentResult.segments.forEach((seg, index) => {
+                const div = document.createElement('div');
+                div.className = 'card mb-2 border-primary-subtle';
+                
+                const speakerOptions = (currentResult.unique_speakers || []).map(sid => {
+                    const disp = mapping[sid] ? `${sid} (${mapping[sid]})` : sid;
+                    const selected = sid === seg.speaker ? 'selected' : '';
+                    return `<option value="${sid}" ${selected}>${disp}</option>`;
+                }).join('');
+                
+                let extraOption = '';
+                if (seg.speaker && seg.speaker !== 'UNKNOWN' && !(currentResult.unique_speakers || []).includes(seg.speaker)) {
+                     const disp = mapping[seg.speaker] ? `${seg.speaker} (${mapping[seg.speaker]})` : seg.speaker;
+                     extraOption = `<option value="${seg.speaker}" selected>${disp}</option>`;
+                }
+                
+                div.innerHTML = `
+                    <div class="card-body p-2 d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-secondary">
+                                ${seg.start ? seg.start.toFixed(2) : '0.00'}s - ${seg.end ? seg.end.toFixed(2) : '0.00'}s
+                            </span>
+                            <select class="form-select form-select-sm w-auto" onchange="updateSegmentSpeaker(${index}, this.value)">
+                                <option value="UNKNOWN" ${!seg.speaker || seg.speaker === 'UNKNOWN' ? 'selected' : ''}>UNKNOWN</option>
+                                ${speakerOptions}
+                                ${extraOption}
+                            </select>
+                        </div>
+                        <textarea class="form-control form-control-sm border-0" rows="2" onchange="updateSegmentText(${index}, this.value)">${seg.text || ''}</textarea>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function updateSegmentSpeaker(index, newSpeaker) {
+            currentResult.segments[index].speaker = newSpeaker;
+        }
+        
+        function updateSegmentText(index, newText) {
+            currentResult.segments[index].text = newText;
+        }
+
+        async function saveEdits() {
+            const btn = document.getElementById('saveEditsBtn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+            btn.disabled = true;
+            
+            currentResult.language = document.getElementById('language').value;
+            
+            try {
+                const response = await fetch('/update_job/' + currentJobId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: currentResult.language,
+                        speaker_mapping: currentResult.speaker_mapping,
+                        segments: currentResult.segments
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'success') {
+                    currentResult = data.result;
+                    document.getElementById('transcriptionText').textContent = data.result.transcription;
+                    renderSpeakerMapping();
+                    renderSegments();
+                    
+                    btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Saved!';
+                    btn.classList.add('btn-success');
+                    btn.classList.remove('btn-warning');
+                } else {
+                    alert('Error saving edits: ' + (data.error || 'Unknown error'));
+                    btn.innerHTML = originalHTML;
+                }
+            } catch (err) {
+                alert('Error saving edits: ' + err.message);
+                btn.innerHTML = originalHTML;
+            }
+            
+            setTimeout(() => {
+                if (btn.classList.contains('btn-success')) {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-warning');
+                    btn.disabled = false;
+                }
+            }, 2000);
         }
 
         function showError(message) {
