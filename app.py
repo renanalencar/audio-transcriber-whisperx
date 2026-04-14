@@ -1,6 +1,20 @@
 # app.py
 from flask import Flask, request, jsonify, send_file, render_template
 import os
+
+# Ensure ffmpeg is dynamically injected into PATH for subprocess calls
+try:
+    import imageio_ffmpeg
+    ffmpeg_path = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+    if ffmpeg_path not in os.environ["PATH"]:
+        os.environ["PATH"] += os.pathsep + ffmpeg_path
+except ImportError:
+    pass
+
+# Set environment variables for model caching before importing other libraries
+os.environ["HF_HOME"] = os.path.abspath("./models")
+os.environ["TORCH_HOME"] = os.path.abspath("./models")
+
 import torch
 import warnings
 import typing
@@ -244,7 +258,7 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
         # 4. Align whisper output
         update_progress(job_id, 50, "Aligning transcription...")
         model_a, metadata = whisperx.load_align_model(
-            language_code=result["language"], device=device
+            language_code=result["language"], device=device, model_dir=model_dir
         )
         result = whisperx.align(
             result["segments"], model_a, metadata, audio, device, return_char_alignments=False
@@ -253,7 +267,11 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
         # 5. Assign speaker labels
         update_progress(job_id, 62, "Loading diarization model...")
         logger.debug(f"Job {job_id[:8]}: Loading diarization model")
-        diarize_model = DiarizationPipeline(use_auth_token=os.getenv("HF_TOKEN"), device=device)
+        diarize_model = DiarizationPipeline(
+            model_name=os.path.abspath(os.path.join(model_dir, "pyannote", "config.yaml")),
+            use_auth_token=None, 
+            device=device
+        )
         
         update_progress(job_id, 75, "Identifying speakers...")
         logger.debug(f"Job {job_id[:8]}: Running speaker diarization")

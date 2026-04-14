@@ -1,4 +1,18 @@
 import os
+
+# Ensure ffmpeg is dynamically injected into PATH for subprocess calls
+try:
+    import imageio_ffmpeg
+    ffmpeg_path = os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+    if ffmpeg_path not in os.environ["PATH"]:
+        os.environ["PATH"] += os.pathsep + ffmpeg_path
+except ImportError:
+    pass
+
+# Set environment variables for model caching before importing other libraries
+os.environ["HF_HOME"] = os.path.abspath("./models")
+os.environ["TORCH_HOME"] = os.path.abspath("./models")
+
 import torch
 import warnings
 import typing
@@ -100,7 +114,7 @@ progress_bar.update(1)
 log("Aligning whisper output...")
 progress_bar.set_description(steps[3])
 model_a, metadata = whisperx.load_align_model(
-    language_code=result["language"], device=device
+    language_code=result["language"], device=device, model_dir=model_dir
 )
 result = whisperx.align(
     result["segments"], model_a, metadata, audio, device, return_char_alignments=False
@@ -115,7 +129,11 @@ progress_bar.update(1)
 # 3. Assign speaker labels
 log("Loading diarization model...")
 progress_bar.set_description(steps[4])
-diarize_model = DiarizationPipeline(use_auth_token=os.getenv("HF_TOKEN"), device=device)
+diarize_model = DiarizationPipeline(
+    model_name=os.path.abspath(os.path.join(model_dir, "pyannote", "config.yaml")),
+    use_auth_token=None, 
+    device=device
+)
 progress_bar.update(1)
 
 # add min/max number of speakers if known
