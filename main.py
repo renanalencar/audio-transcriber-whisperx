@@ -14,6 +14,15 @@ except ImportError:
 os.environ["HF_HOME"] = os.path.abspath("./models")
 os.environ["TORCH_HOME"] = os.path.abspath("./models")
 
+# Fix for pyannote-audio passing deprecated 'use_auth_token' to huggingface_hub
+import huggingface_hub
+_old_hf_hub_download = huggingface_hub.hf_hub_download
+def _patched_hf_hub_download(*args, **kwargs):
+    if "use_auth_token" in kwargs:
+        kwargs["token"] = kwargs.pop("use_auth_token")
+    return _old_hf_hub_download(*args, **kwargs)
+huggingface_hub.hf_hub_download = _patched_hf_hub_download
+
 import torch
 import warnings
 import typing
@@ -67,10 +76,10 @@ torch.serialization.add_safe_globals(
     ]
 )
 
-device = "cuda"
+device = os.getenv("DEVICE", "cuda")
 audio_file = "./input/audio-pt_BR.mp3"
-batch_size = 8  # optimized for RTX 3060 12GB VRAM
-compute_type = "float16"  # GPU-optimized precision
+batch_size = int(os.getenv("BATCH_SIZE", "24"))
+compute_type = os.getenv("COMPUTE_TYPE", "float16")
 
 # Progress tracking
 steps = [
@@ -131,8 +140,8 @@ progress_bar.update(1)
 log("Loading diarization model...")
 progress_bar.set_description(steps[4])
 diarize_model = DiarizationPipeline(
-    model_name=os.path.abspath(os.path.join(model_dir, "pyannote", "config.yaml")),
-    use_auth_token=None,
+    model_name="pyannote/speaker-diarization-3.1",
+    use_auth_token=os.getenv("HF_TOKEN"),
     device=device,
 )
 progress_bar.update(1)
