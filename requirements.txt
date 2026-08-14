@@ -1,6 +1,7 @@
 whisperx==3.7.4
-torch==2.8.0+cu128
-torchaudio==2.8.0+cu128
+torch==2.8.0
+torchaudio==2.8.0
 python-dotenv==1.2.1
 tqdm==4.67.1
 pyannote-audio==3.4.0
+Flask==3.0.3
