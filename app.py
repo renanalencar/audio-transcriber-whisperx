@@ -16,6 +16,15 @@ except ImportError:
 os.environ["HF_HOME"] = os.path.abspath("./models")
 os.environ["TORCH_HOME"] = os.path.abspath("./models")
 
+# Fix for pyannote-audio passing deprecated 'use_auth_token' to huggingface_hub
+import huggingface_hub
+_old_hf_hub_download = huggingface_hub.hf_hub_download
+def _patched_hf_hub_download(*args, **kwargs):
+    if "use_auth_token" in kwargs:
+        kwargs["token"] = kwargs.pop("use_auth_token")
+    return _old_hf_hub_download(*args, **kwargs)
+huggingface_hub.hf_hub_download = _patched_hf_hub_download
+
 import torch
 import warnings
 import typing
@@ -131,9 +140,11 @@ torch.serialization.add_safe_globals(
 
 # Model config
 model_dir = "./models"
-device = "cuda" if torch.cuda.is_available() else "cpu"
-compute_type = "float16" if device == "cuda" else "int8"
-batch_size = 16
+default_device = "cuda" if torch.cuda.is_available() else "cpu"
+device = os.getenv("DEVICE", default_device)
+default_compute = "float16" if device == "cuda" else "int8"
+compute_type = os.getenv("COMPUTE_TYPE", default_compute)
+batch_size = int(os.getenv("BATCH_SIZE", "24"))
 
 logger.info(f"Device: {device}")
 logger.info(f"Compute type: {compute_type}")
@@ -305,10 +316,8 @@ def transcribe_audio(job_id, temp_path, filename, speaker_names=None, language=N
         update_progress(job_id, 62, "Loading diarization model...")
         logger.debug(f"Job {job_id[:8]}: Loading diarization model")
         diarize_model = DiarizationPipeline(
-            model_name=os.path.abspath(
-                os.path.join(model_dir, "pyannote", "config.yaml")
-            ),
-            use_auth_token=None,
+            model_name="pyannote/speaker-diarization-3.1",
+            use_auth_token=os.getenv("HF_TOKEN"),
             device=device,
         )
 
